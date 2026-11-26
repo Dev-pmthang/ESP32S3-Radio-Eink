@@ -2,6 +2,12 @@
 
 Internet Radio MP3 (HTTP/HTTPS) chạy trên **ESP32-S3**, **ESP-IDF v6.1**, FreeRTOS, giải mã MP3 fixed-point **libhelix-mp3**, xuất âm thanh qua DAC **PCM5102** (I2S + XSMT chống pop), điều khiển bằng núm xoay **KY-040**, LED RGB **WS2812**, giao diện **Audio Card** trên màn hình **Waveshare 1.54" E-Ink (SSD1681 200×200)** hoặc **TFT ST7789 (240×240)**, cấu hình Wi-Fi qua **Captive Portal**, và cập nhật firmware **OTA** qua trình duyệt.
 
+## Hình ảnh hoạt động thực tế
+
+| SomaFM Secret Agent | SomaFM Indie Pop Rocks |
+|---|---|
+| ![SomaFM Secret Agent](docs/images/demo_secret_agent.jpg) | ![SomaFM Indie Pop Rocks](docs/images/demo_indie_pop.jpg) |
+
 ---
 
 ## 1. Tính năng nổi bật
