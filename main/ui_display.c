@@ -27,6 +27,7 @@
 #include "app_config.h"
 #include "app_status.h"
 #include "station_list.h"
+#include "station_logos.h"
 #include "stream_manager.h"
 #include "wifi_manager.h"
 #include "ui_display.h"
@@ -523,19 +524,26 @@ static void epd_render_frame(const ui_model_t *m)
     epd_draw_text(EPD_W - 24 - bw, 4, bat_txt, 1, EPD_BLACK);
     epd_draw_hline(6, 14, EPD_W - 12, EPD_BLACK);
 
-    /* 2. Upper Header: Rounded Cover Art (left) + Metadata & Station Name (right) */
+    /* 2. Upper Header: Rounded Station Logo (left) + Metadata & Station Name (right) */
     const int art_x = 8, art_y = 20, art_s = 56;
-    epd_fill_round_rect(art_x, art_y, art_s, art_s, 7, EPD_BLACK);
-    /* Mini spinning vinyl emblem inside the cover art */
-    const int vcx = art_x + art_s / 2, vcy = art_y + art_s / 2;
-    epd_draw_circle(vcx, vcy, 20, EPD_WHITE);
-    epd_draw_circle(vcx, vcy, 15, EPD_WHITE);
-    int32_t c_a = cos_q10(m->disc_deg);
-    int32_t s_a = sin_lut[m->disc_deg];
-    epd_draw_wide_line(vcx + ((9 * c_a) >> 10), vcy + ((9 * s_a) >> 10),
-                       vcx + ((18 * c_a) >> 10), vcy + ((18 * s_a) >> 10), 1, EPD_WHITE);
-    epd_fill_circle(vcx, vcy, 7, EPD_WHITE);
-    epd_fill_circle(vcx, vcy, 2, EPD_BLACK);
+    int logo_idx = m->station_index;
+    if (logo_idx < 0 || logo_idx >= (int)(sizeof(kStationLogos) / sizeof(kStationLogos[0]))) {
+        logo_idx = 0;
+    }
+    const uint8_t *logo = kStationLogos[logo_idx];
+    for (int ly = 0; ly < STATION_LOGO_H; ly++) {
+        for (int lx = 0; lx < STATION_LOGO_W; lx++) {
+            /* Clip 4x4 corner pixels for rounded-square look */
+            bool corner = (lx < 4 && ly < 4 && (3 - lx) * (3 - lx) + (3 - ly) * (3 - ly) > 12) ||
+                          (lx >= art_s - 4 && ly < 4 && (lx - (art_s - 4)) * (lx - (art_s - 4)) + (3 - ly) * (3 - ly) > 12) ||
+                          (lx < 4 && ly >= art_s - 4 && (3 - lx) * (3 - lx) + (ly - (art_s - 4)) * (ly - (art_s - 4)) > 12) ||
+                          (lx >= art_s - 4 && ly >= art_s - 4 && (lx - (art_s - 4)) * (lx - (art_s - 4)) + (ly - (art_s - 4)) * (ly - (art_s - 4)) > 12);
+            if (corner) continue;
+            uint8_t bit = (logo[ly * STATION_LOGO_STRIDE + (lx >> 3)] >> (7 - (lx & 7))) & 1U;
+            epd_put_pixel(art_x + lx, art_y + ly, bit ? EPD_WHITE : EPD_BLACK);
+        }
+    }
+    epd_draw_round_rect(art_x, art_y, art_s, art_s, 6, EPD_BLACK);
 
     /* Right of cover art (x = 72..194) */
     char meta[64];
@@ -682,22 +690,14 @@ static void epd_ui_task(void *arg)
         cur.disc_deg = prev_deg;
 
         bool changed = epd_model_changed(&cur, &last);
-        bool playing = (cur.playback == PB_PLAYING);
         int64_t now_us = esp_timer_get_time();
 
         if (!changed) {
-            if (!playing || (now_us - last_update_us) < (int64_t)EPD_SPIN_MS * 1000) {
-                continue;
-            }
-            cur.disc_deg = (cur.disc_deg + EPD_SPIN_DEG) % 360;
-        } else {
-            if ((now_us - last_update_us) < (int64_t)APP_EPD_MIN_UPDATE_MS * 1000 &&
-                cur.rotation == last.rotation) {
-                continue;
-            }
-            if (playing) {
-                cur.disc_deg = (cur.disc_deg + EPD_SPIN_DEG) % 360;
-            }
+            continue;
+        }
+        if ((now_us - last_update_us) < (int64_t)APP_EPD_MIN_UPDATE_MS * 1000 &&
+            cur.rotation == last.rotation) {
+            continue;
         }
 
         epd_render_frame(&cur);
@@ -937,19 +937,22 @@ static void tft_paint_top(const ui_model_t *m)
 
 static void tft_paint_header(const ui_model_t *m)
 {
-    /* Cover art box (8, 22, 68x68) with spinning vinyl */
+    /* Station Logo (10, 22, 64x64 card with centered 56x56 logo) */
     const int ax = 10, ay = 22, as = 64;
-    tft_fill_rect(ax, ay, as, as, COL_CARD);
-    const int vcx = ax + as / 2, vcy = ay + as / 2;
-    tft_fill_circle(vcx, vcy, 25, COL_BLACK);
-    tft_draw_circle(vcx, vcy, 20, COL_TRACK);
-    tft_draw_circle(vcx, vcy, 15, COL_TRACK);
-    int32_t c_a = cos_q10(m->disc_deg);
-    int32_t s_a = sin_lut[m->disc_deg];
-    tft_draw_wide_line(vcx + ((11 * c_a) >> 10), vcy + ((11 * s_a) >> 10),
-                       vcx + ((22 * c_a) >> 10), vcy + ((22 * s_a) >> 10), 1, COL_MUTED);
-    tft_fill_circle(vcx, vcy, 9, COL_ACCENT);
-    tft_fill_circle(vcx, vcy, 2, COL_BLACK);
+    tft_fill_rect(ax, ay, as, as, COL_WHITE);
+    int logo_idx = m->station_index;
+    if (logo_idx < 0 || logo_idx >= (int)(sizeof(kStationLogos) / sizeof(kStationLogos[0]))) {
+        logo_idx = 0;
+    }
+    const uint8_t *logo = kStationLogos[logo_idx];
+    const int ox = ax + (as - STATION_LOGO_W) / 2;
+    const int oy = ay + (as - STATION_LOGO_H) / 2;
+    for (int ly = 0; ly < STATION_LOGO_H; ly++) {
+        for (int lx = 0; lx < STATION_LOGO_W; lx++) {
+            uint8_t bit = (logo[ly * STATION_LOGO_STRIDE + (lx >> 3)] >> (7 - (lx & 7))) & 1U;
+            tft_put_pixel(ox + lx, oy + ly, bit ? COL_WHITE : COL_BLACK);
+        }
+    }
 
     char meta[64];
     snprintf(meta, sizeof(meta), "%s . #%d/%u", m->genre[0] ? m->genre : "Radio",
