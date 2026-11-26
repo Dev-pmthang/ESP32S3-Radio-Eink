@@ -1,0 +1,40 @@
+idf_component_register(
+    SRCS
+        "main.c"
+        "app_status.c"
+        "command_manager.c"
+        "audio_player.c"
+        "audio_decoder.c"
+        "stream_manager.c"
+        "wifi_manager.c"
+        "rotary_encoder.c"
+        "web_server.c"
+        "station_list.c"
+        "captive_dns.c"
+        "status_led.c"
+        "ui_display.c"
+        "ota_update.c"
+    INCLUDE_DIRS "."
+    # chmorgan/esp-libhelix-mp3 and espressif/led_strip come from main/idf_component.yml
+    PRIV_REQUIRES
+        lwip
+        esp_driver_i2s
+        esp_driver_gpio
+        esp_driver_spi
+        esp_lcd
+        app_update
+        esp_app_format
+        esp_timer
+        esp_wifi
+        esp_netif
+        esp_event
+        nvs_flash
+        esp_http_client
+        esp_http_server
+        esp-tls
+        mbedtls
+        espressif__cjson
+    EMBED_TXTFILES
+        "web/index.html"
+        "web/style.css"
+        "web/app.js")

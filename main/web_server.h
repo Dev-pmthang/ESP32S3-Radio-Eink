@@ -1,0 +1,8 @@
+/*
+ * web_server.h - esp_http_server based cyberpunk dashboard + JSON API.
+ */
+#pragma once
+
+#include "esp_err.h"
+
+esp_err_t web_server_start(void);

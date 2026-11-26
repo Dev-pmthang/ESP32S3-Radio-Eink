@@ -1,0 +1,90 @@
+# ------------------------------------------------------------------
+# ESP32-S3 CYBER WEB RADIO (E-Ink) - sdkconfig.defaults
+# Target: ESP32-S3, ESP-IDF v5.5+ / v6.x
+# ------------------------------------------------------------------
+CONFIG_IDF_TARGET="esp32s3"
+
+# --- CPU / system ---------------------------------------------------
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=4096
+CONFIG_ESP_SYSTEM_PANIC_PRINT_REBOOT=y
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+
+# --- Task watchdog (idle tasks are monitored; our tasks block on queues) ---
+CONFIG_ESP_TASK_WDT_EN=y
+CONFIG_ESP_TASK_WDT_INIT=y
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=10
+
+# --- FreeRTOS -------------------------------------------------------
+# 1 kHz tick gives 1 ms granularity for audio timeouts.
+CONFIG_FREERTOS_HZ=1000
+CONFIG_FREERTOS_USE_TRACE_FACILITY=y
+CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS=y
+CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS=y
+
+# --- Flash / partitions ---------------------------------------------
+# ESP32-C5-DevKitC-1 (ESP32-C5-WROOM-1-N8R8) has 8 MB flash.
+# For a 4 MB module change this to CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y;
+# partitions.csv fits in 4 MB as well.
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+# OTA: two 3 MB app slots. A freshly flashed image boots as "pending verify";
+# the app marks it valid after 10 s of normal operation, otherwise the
+# bootloader rolls back to the previous slot on the next reset.
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
+# --- RAM budget -----------------------------------------------------
+# Measured on ESP32-C5 v1.0 with IDF v5.5.6: only 320 KB of HP SRAM is
+# available to the application. With the IRAM optimisations enabled the
+# Wi-Fi + lwIP code alone took ~118 KB of that and esp_wifi_init() failed
+# with ESP_ERR_NO_MEM (heap was 122 KB at boot). Everything below trades a
+# little Wi-Fi throughput for RAM; 128-320 kbps radio streams do not need
+# the IRAM fast paths.
+CONFIG_ESP_WIFI_IRAM_OPT=n
+CONFIG_ESP_WIFI_RX_IRAM_OPT=n
+CONFIG_ESP_WIFI_SLP_IRAM_OPT=n
+CONFIG_LWIP_IRAM_OPTIMIZATION=n
+CONFIG_ESP_WIFI_ENTERPRISE_SUPPORT=n
+CONFIG_LWIP_IPV6=n
+
+# --- Wi-Fi buffers (streaming oriented, RAM constrained) ------------
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=6
+CONFIG_ESP_WIFI_DYNAMIC_RX_BUFFER_NUM=12
+CONFIG_ESP_WIFI_DYNAMIC_TX_BUFFER=y
+CONFIG_ESP_WIFI_DYNAMIC_TX_BUFFER_NUM=16
+CONFIG_ESP_WIFI_AMPDU_RX_ENABLED=y
+CONFIG_ESP_WIFI_RX_BA_WIN=6
+CONFIG_ESP_WIFI_NVS_ENABLED=y
+
+# --- LwIP TCP window / buffers --------------------------------------
+# 6 x MSS(1440) receive window (enough for 128-320 kbps); RECVMBOX = WND/MSS + 2.
+CONFIG_LWIP_TCP_MSS=1440
+CONFIG_LWIP_TCP_WND_DEFAULT=8640
+CONFIG_LWIP_TCP_SND_BUF_DEFAULT=5760
+CONFIG_LWIP_TCP_RECVMBOX_SIZE=8
+CONFIG_LWIP_TCPIP_RECVMBOX_SIZE=32
+# httpd: 3 clients + listen + control; captive DNS: 1; stream client: 1
+CONFIG_LWIP_MAX_SOCKETS=8
+
+# --- HTTP server ----------------------------------------------------
+CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
+CONFIG_HTTPD_MAX_URI_LEN=512
+
+# --- TLS for HTTPS radio streams ------------------------------------
+CONFIG_ESP_HTTP_CLIENT_ENABLE_HTTPS=y
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_CMN=y
+# Measured on the board: with MBEDTLS_DYNAMIC_BUFFER=y the 16 KB TLS record
+# buffer is (re)allocated per record and failed every ~25 s on a fragmented
+# heap ("Dynamic Impl: alloc(16749 bytes) failed" -> stream drop + reconnect).
+# Static buffers are allocated once at the handshake, when the previous
+# session's memory has just been freed, and never move afterwards.
+CONFIG_MBEDTLS_DYNAMIC_BUFFER=n
+# The peer certificate is only needed during verification.
+CONFIG_MBEDTLS_SSL_KEEP_PEER_CERTIFICATE=n
+# We only ever send a few hundred bytes of HTTP request over TLS.
+CONFIG_MBEDTLS_ASYMMETRIC_CONTENT_LEN=y
+CONFIG_MBEDTLS_SSL_IN_CONTENT_LEN=16384
+CONFIG_MBEDTLS_SSL_OUT_CONTENT_LEN=2048

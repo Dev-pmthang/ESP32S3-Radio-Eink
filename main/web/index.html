@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ESP32-S3 Radio</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="page">
+
+  <header class="top">
+    <h1>ESP32-S3 Radio</h1>
+    <div class="row">
+      <span id="bat-badge" class="badge">BAT --%</span>
+      <span id="pb-state" class="badge">---</span>
+    </div>
+  </header>
+
+  <section class="card">
+    <p id="station-name" class="station">---</p>
+    <p id="stream-title" class="title"></p>
+    <p id="error-line" class="error"></p>
+
+    <div class="row buttons">
+      <button id="btn-prev" class="btn">&#9664; Prev</button>
+      <button id="btn-toggle" class="btn primary">Stop</button>
+      <button id="btn-next" class="btn">Next &#9654;</button>
+    </div>
+    <div class="row">
+      <label for="volume" class="lbl">Volume</label>
+      <input id="volume" type="range" min="0" max="100" value="0" step="1">
+      <span id="volume-val" class="val">0%</span>
+    </div>
+    <div class="row">
+      <span class="lbl">Output</span>
+      <button id="btn-mono" class="btn small">Mono: --</button>
+    </div>
+    <div class="row">
+      <label for="disp-type" class="lbl">Display</label>
+      <select id="disp-type">
+        <option value="epd_154">Waveshare 1.54" E-Ink (SSD1681)</option>
+        <option value="st7789_240">1.54" TFT (ST7789 240x240)</option>
+      </select>
+      <select id="disp-rot">
+        <option value="0">0&deg;</option>
+        <option value="90">90&deg;</option>
+        <option value="180">180&deg;</option>
+        <option value="270">270&deg;</option>
+      </select>
+    </div>
+    <p id="disp-msg" class="muted small"></p>
+  </section>
+
+  <div class="grid two">
+    <section class="card">
+      <h2>Stations</h2>
+      <ul id="stations" class="stations"></ul>
+    </section>
+
+    <section class="card">
+      <div class="row between">
+        <h2>Wi-Fi</h2>
+        <span id="wifi-state" class="badge">---</span>
+      </div>
+      <p id="wifi-line" class="muted small">--</p>
+      <form id="wifi-form" autocomplete="off">
+        <div class="row">
+          <button type="button" id="btn-scan" class="btn small">Scan networks</button>
+          <select id="wifi-scan-list"><option value="">-- scan to list networks --</option></select>
+        </div>
+        <label class="field">SSID
+          <input id="wifi-ssid-in" type="text" maxlength="32" required placeholder="network name">
+        </label>
+        <label class="field">Password
+          <input id="wifi-pass-in" type="password" maxlength="63" placeholder="8-63 chars, empty = open">
+        </label>
+        <button type="submit" class="btn primary">Save &amp; connect</button>
+        <p id="wifi-msg" class="muted small"></p>
+      </form>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="row between">
+      <h2>Firmware</h2>
+      <span id="fw-version" class="muted small">--</span>
+    </div>
+    <div class="row">
+      <input id="fw-file" type="file" accept=".bin">
+      <button id="btn-fw" class="btn small">Upload &amp; flash</button>
+    </div>
+    <div class="meter"><div id="fw-progress" class="meter-fill"></div></div>
+    <p id="fw-msg" class="muted small">Select esp32s3_radio_eink.bin from the build folder. Playback stops during the update; the radio restarts by itself.</p>
+  </section>
+
+  <footer class="muted small">Hold the knob 3 s to erase Wi-Fi and reopen the setup hotspot.</footer>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>
